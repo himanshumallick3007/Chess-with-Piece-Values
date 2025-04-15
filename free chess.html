@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess with Piece Values</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .chess-container {
+            margin-top: 20px;
+        }
+
+        #chessboard {
+            width: 400px;
+            height: 400px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border: 2px solid #333;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .light {
+            background-color: #f0d9b5;
+        }
+
+        .dark {
+            background-color: #b58863;
+        }
+
+        .piece {
+            width: 80%;
+            height: 80%;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: grab;
+            z-index: 1;
+            position: relative;
+        }
+
+        .piece-value {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .white-value {
+            color: #b58863;
+        }
+
+        .black-value {
+            color: #333;
+        }
+
+        .piece:active {
+            cursor: grabbing;
+        }
+
+        .highlight {
+            background-color: rgba(0, 255, 0, 0.5);
+        }
+
+        .possible-move {
+            position: absolute;
+            width: 25%;
+            height: 25%;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.3);
+            z-index: 0;
+        }
+
+        .capture-move {
+            position: absolute;
+            width: 90%;
+            height: 90%;
+            border-radius: 50%;
+            border: 5px solid rgba(0, 0, 0, 0.3);
+            z-index: 0;
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .turn-indicator {
+            font-weight: bold;
+        }
+
+        .white-turn {
+            color: #b58863;
+        }
+
+        .black-turn {
+            color: #333;
+        }
+
+        .move-history {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        .piece-values {
+            margin-top: 20px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        .piece-values h3 {
+            margin-top: 0;
+        }
+
+        .values-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .value-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .value-icon {
+            width: 30px;
+            height: 30px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Chess with Piece Values</h1>
+    <p>A chess game showing the relative value of each piece</p>
+
+    <div class="chess-container">
+        <div id="chessboard"></div>
+    </div>
+
+    <div class="info-panel">
+        <div class="turn-indicator white-turn">White's turn</div>
+        <div id="game-status">Game in progress</div>
+    </div>
+
+    <div class="piece-values">
+        <h3>Standard Chess Piece Values</h3>
+        <div class="values-list">
+            <div class="value-item">
+                <div class="value-icon"
+                    style="background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/whitePawn.svg')">
+                </div>
+                <span>Pawn: 1 point</span>
+            </div>
+            <div class="value-item">
+                <div class="value-icon"
+                    style="background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/whiteKnight.svg')">
+                </div>
+                <span>Knight: 3 points</span>
+            </div>
+            <div class="value-item">
+                <div class="value-icon"
+                    style="background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/whiteBishop.svg')">
+                </div>
+                <span>Bishop: 3 points</span>
+            </div>
+            <div class="value-item">
+                <div class="value-icon"
+                    style="background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/whiteRook.svg')">
+                </div>
+                <span>Rook: 5 points</span>
+            </div>
+            <div class="value-item">
+                <div class="value-icon"
+                    style="background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/whiteQueen.svg')">
+                </div>
+                <span>Queen: 9 points</span>
+            </div>
+            <div class="value-item">
+                <div class="value-icon"
+                    style="background-image: url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/whiteKing.svg')">
+                </div>
+                <span>King: Priceless</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="move-history">
+        <h3>Move History</h3>
+        <div id="move-list"></div>
+    </div>
+
+    <script>
+        // Piece values
+        const pieceValues = {
+            pawn: 1,
+            knight: 3,
+            bishop: 3,
+            rook: 5,
+            queen: 9,
+            king: 0 // King is priceless
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const board = document.getElementById('chessboard');
+            const turnIndicator = document.querySelector('.turn-indicator');
+            const gameStatus = document.getElementById('game-status');
+            const moveList = document.getElementById('move-list');
+
+            let selectedPiece = null;
+            let currentTurn = 'white';
+            let gameOver = false;
+            let moveHistory = [];
+
+            // Initialize the chess board
+            function initializeBoard() {
+                board.innerHTML = '';
+
+                // Create 8x8 board
+                for (let row = 0; row < 8; row++) {
+                    for (let col = 0; col < 8; col++) {
+                        const square = document.createElement('div');
+                        square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+                        square.dataset.row = row;
+                        square.dataset.col = col;
+
+                        square.addEventListener('click', () => handleSquareClick(row, col));
+
+                        board.appendChild(square);
+                    }
+                }
+
+                // Set up initial pieces
+                setupPieces();
+            }
+
+            // Set up the initial chess pieces
+            function setupPieces() {
+                // Pawns
+                for (let col = 0; col < 8; col++) {
+                    createPiece(1, col, 'black', 'pawn');
+                    createPiece(6, col, 'white', 'pawn');
+                }
+
+                // Rooks
+                createPiece(0, 0, 'black', 'rook');
+                createPiece(0, 7, 'black', 'rook');
+                createPiece(7, 0, 'white', 'rook');
+                createPiece(7, 7, 'white', 'rook');
+
+                // Knights
+                createPiece(0, 1, 'black', 'knight');
+                createPiece(0, 6, 'black', 'knight');
+                createPiece(7, 1, 'white', 'knight');
+                createPiece(7, 6, 'white', 'knight');
+
+                // Bishops
+                createPiece(0, 2, 'black', 'bishop');
+                createPiece(0, 5, 'black', 'bishop');
+                createPiece(7, 2, 'white', 'bishop');
+                createPiece(7, 5, 'white', 'bishop');
+
+                // Queens
+                createPiece(0, 3, 'black', 'queen');
+                createPiece(7, 3, 'white', 'queen');
+
+                // Kings
+                createPiece(0, 4, 'black', 'king');
+                createPiece(7, 4, 'white', 'king');
+            }
+
+            // Create a chess piece with value indicator
+            function createPiece(row, col, color, type) {
+                const square = getSquare(row, col);
+                if (!square) return;
+
+                const piece = document.createElement('div');
+                piece.className = 'piece';
+                piece.dataset.color = color;
+                piece.dataset.type = type;
+                piece.style.backgroundImage = `url('https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/${color}${type}.svg')`;
+
+                // Add value indicator
+                if (type !== 'king') {
+                    const valueIndicator = document.createElement('div');
+                    valueIndicator.className = `piece-value ${color}-value`;
+                    valueIndicator.textContent = pieceValues[type];
+                    piece.appendChild(valueIndicator);
+                }
+
+                square.appendChild(piece);
+            }
+
+            // [Rest of the JavaScript code remains the same as in the previous example]
+            // Handle square clicks
+            function handleSquareClick(row, col) {
+                if (gameOver) return;
+
+                const square = getSquare(row, col);
+                const piece = square.querySelector('.piece');
+
+                // Clear previous highlights
+                clearHighlights();
+
+                // If clicking on a piece of the current turn's color
+                if (piece && piece.dataset.color === currentTurn) {
+                    selectedPiece = {
+                        element: piece,
+                        row: parseInt(square.dataset.row),
+                        col: parseInt(square.dataset.col),
+                        color: piece.dataset.color,
+                        type: piece.dataset.type
+                    };
+
+                    // Highlight selected piece
+                    square.classList.add('highlight');
+
+                    // Show possible moves
+                    showPossibleMoves(selectedPiece);
+                }
+                // If a piece is selected and clicking on a possible move square
+                else if (selectedPiece) {
+                    const possibleMoveIndicator = square.querySelector('.possible-move, .capture-move');
+                    if (possibleMoveIndicator) {
+                        movePiece(selectedPiece, row, col);
+                    }
+                }
+            }
+
+            // Show possible moves for a piece
+            function showPossibleMoves(piece) {
+                const moves = [];
+
+                switch (piece.type) {
+                    case 'pawn':
+                        const direction = piece.color === 'white' ? -1 : 1;
+
+                        // Forward move
+                        const forwardRow = piece.row + direction;
+                        if (forwardRow >= 0 && forwardRow < 8 && !getPiece(forwardRow, piece.col)) {
+                            moves.push({ row: forwardRow, col: piece.col, isCapture: false });
+
+                            // Double move from starting position
+                            const startRow = piece.color === 'white' ? 6 : 1;
+                            if (piece.row === startRow) {
+                                const doubleForwardRow = piece.row + 2 * direction;
+                                if (!getPiece(doubleForwardRow, piece.col)) {
+                                    moves.push({ row: doubleForwardRow, col: piece.col, isCapture: false });
+                                }
+                            }
+                        }
+
+                        // Capture moves
+                        const captureCols = [piece.col - 1, piece.col + 1];
+                        for (const col of captureCols) {
+                            if (col >= 0 && col < 8) {
+                                const targetPiece = getPiece(forwardRow, col);
+                                if (targetPiece && targetPiece.dataset.color !== piece.color) {
+                                    moves.push({ row: forwardRow, col: col, isCapture: true });
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'rook':
+                        // Horizontal and vertical moves
+                        addStraightMoves(piece, moves);
+                        break;
+
+                    case 'knight':
+                        // L-shaped moves
+                        const knightMoves = [
+                            { row: 2, col: 1 }, { row: 2, col: -1 },
+                            { row: -2, col: 1 }, { row: -2, col: -1 },
+                            { row: 1, col: 2 }, { row: 1, col: -2 },
+                            { row: -1, col: 2 }, { row: -1, col: -2 }
+                        ];
+
+                        for (const move of knightMoves) {
+                            const newRow = piece.row + move.row;
+                            const newCol = piece.col + move.col;
+
+                            if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                                const targetPiece = getPiece(newRow, newCol);
+                                if (!targetPiece || targetPiece.dataset.color !== piece.color) {
+                                    moves.push({
+                                        row: newRow,
+                                        col: newCol,
+                                        isCapture: !!targetPiece
+                                    });
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'bishop':
+                        // Diagonal moves
+                        addDiagonalMoves(piece, moves);
+                        break;
+
+                    case 'queen':
+                        // Combination of rook and bishop moves
+                        addStraightMoves(piece, moves);
+                        addDiagonalMoves(piece, moves);
+                        break;
+
+                    case 'king':
+                        // One square in any direction
+                        for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
+                            for (let colOffset = -1; colOffset <= 1; colOffset++) {
+                                if (rowOffset === 0 && colOffset === 0) continue;
+
+                                const newRow = piece.row + rowOffset;
+                                const newCol = piece.col + colOffset;
+
+                                if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                                    const targetPiece = getPiece(newRow, newCol);
+                                    if (!targetPiece || targetPiece.dataset.color !== piece.color) {
+                                        moves.push({
+                                            row: newRow,
+                                            col: newCol,
+                                            isCapture: !!targetPiece
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                }
+
+                // Display possible moves on the board
+                for (const move of moves) {
+                    const square = getSquare(move.row, move.col);
+                    if (square) {
+                        const moveIndicator = document.createElement('div');
+                        moveIndicator.className = move.isCapture ? 'capture-move' : 'possible-move';
+                        square.appendChild(moveIndicator);
+                    }
+                }
+            }
+
+            // Helper function to add straight moves (for rook and queen)
+            function addStraightMoves(piece, moves) {
+                const directions = [
+                    { row: 1, col: 0 },  // down
+                    { row: -1, col: 0 }, // up
+                    { row: 0, col: 1 },  // right
+                    { row: 0, col: -1 }  // left
+                ];
+
+                for (const dir of directions) {
+                    for (let i = 1; i < 8; i++) {
+                        const newRow = piece.row + dir.row * i;
+                        const newCol = piece.col + dir.col * i;
+
+                        if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
+
+                        const targetPiece = getPiece(newRow, newCol);
+
+                        if (!targetPiece) {
+                            moves.push({ row: newRow, col: newCol, isCapture: false });
+                        } else {
+                            if (targetPiece.dataset.color !== piece.color) {
+                                moves.push({ row: newRow, col: newCol, isCapture: true });
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Helper function to add diagonal moves (for bishop and queen)
+            function addDiagonalMoves(piece, moves) {
+                const directions = [
+                    { row: 1, col: 1 },   // down-right
+                    { row: 1, col: -1 },  // down-left
+                    { row: -1, col: 1 },  // up-right
+                    { row: -1, col: -1 }  // up-left
+                ];
+
+                for (const dir of directions) {
+                    for (let i = 1; i < 8; i++) {
+                        const newRow = piece.row + dir.row * i;
+                        const newCol = piece.col + dir.col * i;
+
+                        if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) break;
+
+                        const targetPiece = getPiece(newRow, newCol);
+
+                        if (!targetPiece) {
+                            moves.push({ row: newRow, col: newCol, isCapture: false });
+                        } else {
+                            if (targetPiece.dataset.color !== piece.color) {
+                                moves.push({ row: newRow, col: newCol, isCapture: true });
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Move a piece to a new position
+            function movePiece(piece, newRow, newCol) {
+                const oldSquare = getSquare(piece.row, piece.col);
+                const newSquare = getSquare(newRow, newCol);
+                const targetPiece = getPiece(newRow, newCol);
+
+                // Remove captured piece if any
+                if (targetPiece) {
+                    targetPiece.remove();
+
+                    // Check if king was captured
+                    if (targetPiece.dataset.type === 'king') {
+                        gameOver = true;
+                        gameStatus.textContent = `${piece.color === 'white' ? 'White' : 'Black'} wins!`;
+                    }
+                }
+
+                // Move the piece
+                piece.element.remove();
+                newSquare.appendChild(piece.element);
+
+                // Record the move
+                const moveNotation = getMoveNotation(piece, newRow, newCol, !!targetPiece);
+                moveHistory.push({
+                    turn: currentTurn,
+                    piece: piece.type,
+                    from: { row: piece.row, col: piece.col },
+                    to: { row: newRow, col: newCol },
+                    notation: moveNotation,
+                    isCapture: !!targetPiece
+                });
+
+                updateMoveHistory();
+
+                // Switch turns
+                currentTurn = currentTurn === 'white' ? 'black' : 'white';
+                updateTurnIndicator();
+
+                // Clear selection
+                selectedPiece = null;
+                clearHighlights();
+            }
+
+            // Get chess notation for a move
+            function getMoveNotation(piece, newRow, newCol, isCapture) {
+                const pieceSymbol = piece.type === 'pawn' ? '' :
+                    piece.type === 'knight' ? 'N' :
+                        piece.type[0].toUpperCase();
+
+                const file = String.fromCharCode(97 + newCol);
+                const rank = 8 - newRow;
+
+                let notation = pieceSymbol;
+                if (isCapture) {
+                    if (piece.type === 'pawn') {
+                        notation += String.fromCharCode(97 + piece.col);
+                    }
+                    notation += 'x';
+                }
+                notation += file + rank;
+
+                return notation;
+            }
+
+            // Update the move history display
+            function updateMoveHistory() {
+                moveList.innerHTML = '';
+
+                // Group moves by turn pairs
+                for (let i = 0; i < moveHistory.length; i += 2) {
+                    const whiteMove = moveHistory[i];
+                    const blackMove = moveHistory[i + 1];
+
+                    const moveEntry = document.createElement('div');
+                    moveEntry.textContent = `${i / 2 + 1}. ${whiteMove.notation}`;
+
+                    if (blackMove) {
+                        moveEntry.textContent += ` ${blackMove.notation}`;
+                    }
+
+                    moveList.appendChild(moveEntry);
+                }
+
+                // Scroll to bottom
+                moveList.scrollTop = moveList.scrollHeight;
+            }
+
+            // Update the turn indicator
+            function updateTurnIndicator() {
+                turnIndicator.textContent = `${currentTurn === 'white' ? 'White' : 'Black'}'s turn`;
+                turnIndicator.className = `turn-indicator ${currentTurn}-turn`;
+            }
+
+            // Clear all highlights and possible move indicators
+            function clearHighlights() {
+                document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+                document.querySelectorAll('.possible-move, .capture-move').forEach(el => el.remove());
+            }
+
+            // Get a square element by row and column
+            function getSquare(row, col) {
+                return document.querySelector(`.square[data-row="${row}"][data-col="${col}"]`);
+            }
+
+            // Get a piece element by row and column
+            function getPiece(row, col) {
+                const square = getSquare(row, col);
+                return square ? square.querySelector('.piece') : null;
+            }
+
+            // Initialize the game
+            initializeBoard();
+        });
+    </script>
+</body>
+
+</html>
